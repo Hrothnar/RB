@@ -1,5 +1,9 @@
 package tech.neo.material.core;
 
+import tech.neo.exception.FullStorageEx;
+import tech.neo.exception.NotValidArgumentEx;
+import tech.neo.util.logger.Journal;
+
 import java.util.Objects;
 
 public abstract class Material implements Cloneable {
@@ -55,31 +59,50 @@ public abstract class Material implements Cloneable {
 
     public void setAmount(int amount) {
         if (amount < 0 || amount > capacityLimit) {
-            throw new IllegalArgumentException("Amount should be correct number");
+            try {
+                throw new NotValidArgumentEx("Amount should be correct number");
+            } catch (NotValidArgumentEx ex) {
+                Journal.LOGGER.warning(ex.getMessage());
+            }
         }
         this.amount = amount;
     }
 
+    /**
+     * Adds to material 'amount' passed number until it reach capacity limit
+     *
+     * @param amount
+     * @return amount of added materials
+     */
     public int addAmountToMaterial(int amount) {
-        if (amount == capacityLimit) {
-            throw new RuntimeException("Storage already full"); // this and other generic exceptions could/should be changed to specific ones
+        int added = 0;
+        try {
+            if (amount == capacityLimit) {
+                throw new FullStorageEx("Storage already full");
+            }
+            if (amount <= 0 || amount > capacityLimit) {
+                throw new NotValidArgumentEx("Amount should be correct number");
+            }
+            int available = capacityLimit - this.amount;
+            if (amount <= available) {
+                this.amount += amount;
+                added = amount;
+            } else {
+                this.amount += available;
+                added = available;
+            }
+        } catch (FullStorageEx | NotValidArgumentEx ex) {
+            Journal.LOGGER.warning(ex.getMessage());
         }
-        if (amount <= 0 || amount > capacityLimit) {
-            throw new IllegalArgumentException("Amount should be correct number");
-        }
-        int available = capacityLimit - this.amount;
-        if (amount <= available) {
-            this.amount += amount;
-            return amount;
-        } else {
-            this.amount += available;
-            return available;
-        }
+        return added;
     }
 
     public int getCapacityLimit() {
         return capacityLimit;
     }
+
+    @Override
+    public abstract Material clone();
 
     @Override
     public boolean equals(Object o) {
@@ -105,6 +128,5 @@ public abstract class Material implements Cloneable {
                 '}';
     }
 
-    @Override
-    public abstract Material clone();
+
 }

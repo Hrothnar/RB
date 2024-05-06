@@ -2,6 +2,9 @@ package tech.neo.warehouse;
 
 import tech.neo.material.core.Material;
 import tech.neo.material.dto.MaterialDTO;
+import tech.neo.observer.MaterialObservable;
+import tech.neo.observer.MaterialObserver;
+import tech.neo.observer.Observer;
 import tech.neo.warehouse.core.Warehouse;
 
 import java.io.IOException;
@@ -12,7 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class BasicWarehouse implements Warehouse {
+public class BasicWarehouse implements Warehouse, MaterialObservable {
+    private final List<MaterialObserver> observers = new ArrayList<>();
     private Map<String, Material> materials;
 
     public BasicWarehouse(Map<String, Material> materials) {
@@ -38,6 +42,7 @@ public class BasicWarehouse implements Warehouse {
     public void updateMaterialAmount(Material material) {
         Optional<Material> optional = Optional.ofNullable(materials.get(material.getName()));
         optional.ifPresent((element) -> element.setAmount(material.getAmount()));
+        notifyAboutAmount(material); // notification logic
     }
 
     @Override
@@ -45,6 +50,7 @@ public class BasicWarehouse implements Warehouse {
         Arrays.stream(materials).forEach((material -> {
             Optional<Material> optional = Optional.ofNullable(this.materials.get(material.getName()));
             optional.ifPresent((element) -> element.setAmount(material.getAmount()));
+            notifyAboutAmount(material); // notification logic
         }));
     }
 
@@ -53,6 +59,7 @@ public class BasicWarehouse implements Warehouse {
         materials.forEach((material -> {
             Optional<Material> optional = Optional.ofNullable(this.materials.get(material.getName()));
             optional.ifPresent((element) -> element.setAmount(material.getAmount()));
+            notifyAboutAmount(material); // notification logic
         }));
     }
 
@@ -78,9 +85,8 @@ public class BasicWarehouse implements Warehouse {
     }
 
     @Override
-    public boolean removeMaterial(String name) {
-        Material removed = materials.remove(name);
-        return Objects.nonNull(removed);
+    public void removeMaterial(String name) {
+        materials.remove(name);
     }
 
     @Override
@@ -98,12 +104,25 @@ public class BasicWarehouse implements Warehouse {
         materials = new HashMap<>();
     }
 
-
+    /**
+     * Migrates selected materials from the specified warehouse to the current one;
+     * DTO is used as materials, where the desired amount of material for migration is indicated
+     *
+     * @param from
+     * @param materials
+     */
     @Override
     public void migrateMaterials(Warehouse from, MaterialDTO... materials) {
         migrate(from, Stream.of(materials));
     }
 
+    /**
+     * Migrates selected materials from the specified warehouse to the current one;
+     * DTO is used as materials, where the desired amount of material for migration is indicated
+     *
+     * @param from
+     * @param materials
+     */
     @Override
     public void migrateMaterials(Warehouse from, List<MaterialDTO> materials) {
         migrate(from, materials.stream());
@@ -123,6 +142,7 @@ public class BasicWarehouse implements Warehouse {
                 if (toMaterial.getAmount() < toMaterial.getCapacityLimit() && materialDTO.amountForMigration <= fromMaterial.getAmount()) {
                     int added = toMaterial.addAmountToMaterial(materialDTO.amountForMigration);
                     fromMaterial.setAmount(fromMaterial.getAmount() - added);
+                    notifyAboutAmount(fromMaterial); // notification logic
                 }
             }));
         } catch (Exception ex) {
@@ -130,12 +150,50 @@ public class BasicWarehouse implements Warehouse {
         }
     }
 
+    /**
+     * Writes the current state of the warehouse to a file
+     */
     @Override
     public void writeDownStocks() {
         try {
             Files.write(Path.of("./src/main/java/tech/neo/util/stock.log"), this.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void registerObserver(Observer observer) {
+        observers.add((MaterialObserver) observer);
+    }
+
+    @Override
+    public void removeObserver(Observer observer) {
+        observers.remove((MaterialObserver) observer);
+    }
+
+    /**
+     * Notifies observers about current state of the warehouse
+     */
+    @Override
+    public void notifyAboutLeftovers() {
+        List<Material> materialList = materials.values().stream().toList();
+        observers.forEach((observer) -> observer.receiveLeftovers(materialList, this));
+    }
+
+    /**
+     * Allows observers to know when leftover level of a specific material are low
+     *
+     * @param material
+     */
+    @Override
+    public void notifyAboutLowLeftover(Material material) {
+        observers.forEach((observer) -> observer.receiveLeftovers(material, this));
+    }
+
+    private void notifyAboutAmount(Material material) {
+        if (material.getAmount() < (material.getCapacityLimit() / 5)) {
+            notifyAboutLowLeftover(material);
         }
     }
 

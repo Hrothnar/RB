@@ -2,11 +2,12 @@ package tech.neo.warehouse.core;
 
 import tech.neo.material.core.Material;
 import tech.neo.material.dto.MaterialDTO;
+import tech.neo.observer.MaterialObservable;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface Warehouse {
+public interface Warehouse extends MaterialObservable {
 
     public void addMaterial(Material material);
 
@@ -29,7 +30,7 @@ public interface Warehouse {
     public List<Material> getMaterials(List<String> names);
 
 
-    public boolean removeMaterial(String name);
+    public void removeMaterial(String name);
 
     public void removeMaterials(String... names);
 

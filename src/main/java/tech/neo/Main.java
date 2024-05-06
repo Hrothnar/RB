@@ -6,6 +6,9 @@ import tech.neo.material.Glue;
 import tech.neo.material.Iron;
 import tech.neo.material.core.Material;
 import tech.neo.material.dto.MaterialDTO;
+import tech.neo.observer.Observer;
+import tech.neo.observer.imp.StockManager;
+import tech.neo.observer.imp.Supplier;
 import tech.neo.util.logger.Journal;
 import tech.neo.warehouse.BasicWarehouse;
 import tech.neo.warehouse.core.Warehouse;
@@ -20,18 +23,41 @@ public class Main {
         Journal.setupLogger();
         Journal.LOGGER.info("START");
 
-
-//        testAddMaterials();
-//        testUpdateMaterials();
-//        testGetMaterials();
-        testMigrateMaterials();
-//        testRemoveMaterials();
-
-
+        testAddMaterials(null);
+        testUpdateMaterials(null);
+        testGetMaterials(null);
+        testMigrateMaterials(null, null);
+        testRemoveMaterials(null);
+        testObserver();
     }
 
-    private static void testRemoveMaterials() {
+    private static void testObserver() {
         Warehouse warehouse = generateWarehouse();
+        Warehouse warehouse2 = generateWarehouse();
+
+
+        Observer stockManager = new StockManager();
+        Observer supplier1 = new Supplier();
+        Observer supplier2 = new Supplier();
+
+
+        warehouse.registerObserver(stockManager);
+        warehouse.registerObserver(supplier1);
+        warehouse.registerObserver(supplier2);
+
+
+        testAddMaterials(warehouse);
+        testUpdateMaterials(warehouse);
+        testGetMaterials(warehouse);
+        testMigrateMaterials(warehouse, warehouse2);
+        testRemoveMaterials(warehouse);
+
+        warehouse.notifyAboutLeftovers();
+        warehouse2.notifyAboutLeftovers();
+    }
+
+    private static void testRemoveMaterials(Warehouse warehouse) {
+        warehouse = warehouse == null ? generateWarehouse() : warehouse;
 
         System.out.println(warehouse);
         System.out.println();
@@ -54,9 +80,9 @@ public class Main {
         System.out.println();
     }
 
-    private static void testMigrateMaterials() {
-        Warehouse warehouse1 = generateWarehouse();
-        Warehouse warehouse2 = generateWarehouse();
+    private static void testMigrateMaterials(Warehouse warehouse1, Warehouse warehouse2) {
+        warehouse1 = warehouse1 == null ? generateWarehouse() : warehouse1;
+        warehouse2 = warehouse2 == null ? generateWarehouse() : warehouse2;
 
         System.out.println();
         System.out.println(warehouse1);
@@ -78,8 +104,8 @@ public class Main {
         warehouse2.writeDownStocks();
     }
 
-    private static void testGetMaterials() {
-        Warehouse warehouse = generateWarehouse();
+    private static void testGetMaterials(Warehouse warehouse) {
+        warehouse = warehouse == null ? generateWarehouse() : warehouse;
 
         Material material = warehouse.getMaterial("Iron").get();
         List<Material> materials1 = warehouse.getMaterials("Iron", "Glue", "Cooper");
@@ -90,8 +116,8 @@ public class Main {
         System.out.println(materials2);
     }
 
-    private static void testUpdateMaterials() {
-        Warehouse warehouse = generateWarehouse();
+    private static void testUpdateMaterials(Warehouse warehouse) {
+        warehouse = warehouse == null ? generateWarehouse() : warehouse;
 
         System.out.println(warehouse);
 
@@ -102,9 +128,8 @@ public class Main {
         System.out.println(warehouse);
     }
 
-    private static void testAddMaterials() {
-
-        Warehouse warehouse = generateWarehouse();
+    private static void testAddMaterials(Warehouse warehouse) {
+        warehouse = warehouse == null ? generateWarehouse() : warehouse;
 
         System.out.println(warehouse);
 
