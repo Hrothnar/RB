@@ -177,8 +177,10 @@ public class BasicWarehouse implements Warehouse, MaterialObservable {
      */
     @Override
     public void notifyAboutLeftovers() {
-        List<Material> materialList = materials.values().stream().toList();
-        observers.forEach((observer) -> observer.receiveLeftovers(materialList, this));
+        new Thread(() -> {
+            List<Material> materialList = materials.values().stream().toList();
+            observers.forEach((observer) -> observer.receiveLeftovers(materialList, this));
+        }).start();
     }
 
     /**
@@ -188,7 +190,9 @@ public class BasicWarehouse implements Warehouse, MaterialObservable {
      */
     @Override
     public void notifyAboutLowLeftover(Material material) {
-        observers.forEach((observer) -> observer.receiveLeftovers(material, this));
+        new Thread(() -> {
+            observers.forEach((observer) -> observer.receiveLeftovers(material, this));
+        }).start();
     }
 
     private void notifyAboutAmount(Material material) {

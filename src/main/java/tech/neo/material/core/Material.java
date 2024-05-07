@@ -24,6 +24,7 @@ public abstract class Material implements Cloneable {
     public void setName(String name) {
         if (Objects.isNull(name) || name.isBlank()) {
             this.name = "Default Material Name";
+            Journal.LOGGER.info("Material name has been set as default value");
         } else {
             this.name = name;
         }
@@ -36,6 +37,7 @@ public abstract class Material implements Cloneable {
     public void setDescription(String description) {
         if (Objects.isNull(description) || description.isBlank()) {
             this.description = "Default Material Description";
+            Journal.LOGGER.info("Material description has been set as default value");
         } else {
             this.description = description;
         }
@@ -48,6 +50,7 @@ public abstract class Material implements Cloneable {
     public void setIcon(String icon) {
         if (Objects.isNull(icon) || icon.isBlank()) {
             this.icon = "Default Material Icon";
+            Journal.LOGGER.info("Material icon has been set as default value");
         } else {
             this.icon = icon;
         }
@@ -78,7 +81,7 @@ public abstract class Material implements Cloneable {
         int added = 0;
         try {
             if (amount == capacityLimit) {
-                throw new FullStorageEx("Storage already full");
+                throw new FullStorageEx("Storage is already full");
             }
             if (amount <= 0 || amount > capacityLimit) {
                 throw new NotValidArgumentEx("Amount should be correct number");
